@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AZËE — Official</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border: 0; font: inherit; vertical-align: baseline; }
+    :root {
+      --orange: #D95A00;
+      --teal: #00B89A;
+      --bg: #060606;
+      --border: rgba(255,255,255,0.055);
+      --muted: #686868;
+      --muted2: #a0a0a0;
+      --slide-size: clamp(460px, 44vw, 680px);
+      --side-pad: max(52px, 7%);
+    }
+    html, body { background: var(--bg); color: #fff; -webkit-font-smoothing: antialiased; }
+    body { font-family: 'Inter', system-ui, sans-serif; line-height: 1; overflow-x: hidden; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: #000; }
+    ::-webkit-scrollbar-thumb { background: var(--orange); border-radius: 2px; }
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; background: none; border: none; font-family: inherit; color: inherit; }
+
+    /* grain */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 9998;
+      pointer-events: none; opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 300px 300px;
+    }
+
+    /* ══════════════ NAV ══════════════ */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: 100px;
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 28px;
+      background: rgba(6,6,6,0.93);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-left { display: flex; align-items: center; gap: 2px; padding-left: max(0px, calc(15vw - 28px)); }
+    .nav-center a { display: flex; align-items: center; justify-content: center; }
+    .nav-center img {
+      height: 116px; width: auto; display: block;
+      mix-blend-mode: screen; opacity: 0.92;
+    }
+    .nav-right { display: flex; align-items: center; gap: 14px; justify-content: flex-end; }
+    .nav-link {
+      font-size: 15px; font-weight: 600; letter-spacing: 0.02em;
+      color: rgba(255,255,255,0.65);
+      padding: 5px 10px; border-radius: 4px;
+      border: 1px solid transparent;
+      transition: color 0.18s, border-color 0.18s, transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .nav-link:hover { color: #fff; border-color: rgba(255,255,255,0.42); transform: translateX(3px); }
+    .nav-link:focus-visible { outline: 1px solid rgba(255,255,255,0.28); outline-offset: 2px; border-radius: 4px; }
+    .nav-link.active { color: #fff; }
+    .nav-social {
+      color: rgba(255,255,255,0.28); display: flex; align-items: center;
+      transition: color 0.18s, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .nav-social:hover { color: rgba(255,255,255,0.88); transform: scale(1.16); }
+
+    /* ══════════════ FEATURED CAROUSEL ══════════════ */
+    .featured {
+      margin-top: 100px;
+      padding-top: 28px;
+      padding-bottom: 8px;
+      position: relative;
+    }
+    .featured::before {
+      content: '';
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 700px; height: 520px;
+      background: radial-gradient(ellipse at 40% 40%, rgba(0,184,154,0.05) 0%, transparent 65%),
+                  radial-gradient(ellipse at 65% 55%, rgba(217,90,0,0.04) 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    /*
+      Layout logic:
+      - Cover is centered on the page: stage left = 50vw - slide_size/2
+      - Sidebar fills 0 → stage left, text centered within it
+      - Both are absolutely positioned so they're independent
+    */
+    .feat-layout {
+      position: relative;
+      min-height: calc(var(--slide-size) + 340px);
+    }
+
+    /* Sidebar: spans viewport left edge → cover left edge, text left-aligned block centered via padding */
+    .feat-aside {
+      position: absolute;
+      left: 0; top: 0;
+      width: max(90px, calc(50vw - clamp(230px, 22vw, 340px)));
+      padding: 200px 16px 0 max(16px, 15vw);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      z-index: 2;
+    }
+    .feat-aside-badge {
+      display: inline-block;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,0.55); color: rgba(255,255,255,0.85);
+      padding: 4px 10px; border-radius: 3px;
+      margin-bottom: 18px;
+    }
+    .feat-aside-item {
+      display: block; text-align: left;
+      font-size: 17px; font-weight: 400; line-height: 1.45;
+      color: rgba(255,255,255,0.5); padding: 4px 8px;
+      border: 1px solid transparent; border-radius: 4px;
+      white-space: nowrap;
+      transition: color 0.18s, border-color 0.18s, transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .feat-aside-item:hover { color: #fff; border-color: rgba(255,255,255,0.42); transform: translateX(5px); }
+    .feat-aside-item:focus-visible { outline: 1px solid rgba(255,255,255,0.22); outline-offset: 3px; border-radius: 4px; }
+    .feat-aside-item.active { color: #fff; }
+
+    /* Stage: starts exactly where cover should be centered on page */
+    .feat-stage {
+      position: absolute;
+      left: max(90px, calc(50vw - clamp(230px, 22vw, 340px)));
+      right: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .feat-canvas {
+      position: relative;
+      height: calc(var(--slide-size) + 160px);
+      overflow: hidden;
+    }
+
+    /* Each slide */
+    .feat-slide {
+      position: absolute;
+      top: 0; left: 0;
+      width: var(--slide-size);
+      height: var(--slide-size);
+      transform-origin: top left;
+      transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94),
+                  opacity 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
+      will-change: transform, opacity;
+      cursor: pointer;
+    }
+    .feat-slide .slide-img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+      pointer-events: none;
+      transform-origin: center center;
+    }
+
+    /* Info bar below active cover */
+    /* Slide progress bar */
+    .feat-progress {
+      display: flex; gap: 4px;
+      margin-top: 28px;
+      width: var(--slide-size);
+    }
+    .feat-progress-seg {
+      flex: 1; height: 2px; border-radius: 1px;
+      background: rgba(255,255,255,0.18);
+      transition: background 0.35s;
+      cursor: pointer;
+    }
+    .feat-progress-seg.active {
+      background: rgba(255,255,255,0.88);
+    }
+
+    /* ══════════════ DIVIDER ══════════════ */
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--border) 20%, var(--border) 80%, transparent 100%);
+      max-width: 1180px;
+      margin: 48px auto;
+    }
+
+    /* ══════════════ COLLECTION ══════════════ */
+    .collection {
+      padding: 0 48px 88px 0;
+    }
+    .collection-top {
+      display: flex; align-items: baseline;
+      padding-left: max(90px, calc(50vw - clamp(230px, 22vw, 340px))); padding-right: 0;
+      margin-bottom: 32px;
+    }
+    .collection-heading {
+      font-family: inherit;
+      font-size: 34px; font-weight: 600;
+      letter-spacing: -0.02em;
+      color: rgba(255,255,255,0.9);
+    }
+    .collection-inner {
+      display: flex; align-items: flex-start;
+    }
+    .col-sidebar {
+      flex-shrink: 0;
+      width: calc(max(90px, calc(50vw - clamp(230px, 22vw, 340px))) - max(16px, 15vw));
+      margin-left: max(16px, 15vw);
+      padding-right: 18px; padding-top: 3px;
+    }
+    .col-sidebar-filter {
+      display: block; text-align: left;
+      font-size: 15px; font-weight: 400; color: rgba(255,255,255,0.55);
+      padding: 4px 8px; border: 1px solid transparent; border-radius: 4px;
+      transition: color 0.18s, border-color 0.18s, transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .col-sidebar-filter:hover { color: #fff; border-color: rgba(255,255,255,0.42); transform: translateX(5px); }
+    .col-sidebar-filter:focus-visible { outline: 1px solid rgba(255,255,255,0.22); outline-offset: 3px; border-radius: 4px; }
+    .col-sidebar-filter.active { color: #fff; }
+
+    .releases-grid {
+      flex: 1;
+      max-width: 930px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 36px 20px;
+    }
+    .release-card { display: block; cursor: pointer; }
+    .release-card.filtered-out { display: none; }
+    .release-cover {
+      width: 100%; aspect-ratio: 1/1;
+      overflow: hidden; position: relative;
+      margin-bottom: 11px;
+    }
+    .release-cover img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      object-position: center center;
+      transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94), filter 0.4s;
+    }
+    .release-card:hover .release-cover img { transform: scale(1.06); filter: brightness(1.08); }
+    .release-cover-ov {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(6,6,6,0.7) 0%, transparent 50%);
+      opacity: 0; transition: opacity 0.35s; pointer-events: none;
+    }
+    .release-card:hover .release-cover-ov { opacity: 1; }
+    .release-title {
+      font-size: 16px; font-weight: 500; letter-spacing: -0.01em;
+      margin-bottom: 5px; line-height: 1.3;
+      color: rgba(255,255,255,0.95);
+      transition: color 0.18s;
+    }
+    .release-card:hover .release-title { color: #fff; }
+    .release-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .release-year { font-size: 14px; color: var(--muted2); }
+    .release-type {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 1px 5px; border-radius: 2px; color: var(--muted2);
+    }
+
+    .load-more-wrap {
+      margin-top: 56px; text-align: center;
+      padding-top: 28px; border-top: 1px solid var(--border);
+    }
+    .load-more-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 15px; color: var(--muted2);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 10px 26px; border-radius: 20px;
+      transition: color 0.18s, border-color 0.18s, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .load-more-btn:hover { color: rgba(255,255,255,0.82); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+    .load-more-btn:active { transform: translateY(0); }
+
+    /* ══════════════ FOOTER ══════════════ */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 20px max(48px, 15vw);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .foot-links { display: flex; gap: 20px; }
+    .foot-link { font-size: 12px; color: var(--muted); transition: color 0.15s; }
+    .foot-link:hover { color: #fff; }
+    .foot-copy { font-size: 12px; color: var(--muted); }
+    .foot-socials { display: flex; gap: 16px; align-items: center; }
+    .foot-social {
+      color: rgba(255,255,255,0.24); display: flex;
+      transition: color 0.18s, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .foot-social:hover { color: rgba(255,255,255,0.82); transform: scale(1.16); }
+
+    /* ══════════════ RESPONSIVE ══════════════ */
+    @media (max-width: 900px) {
+      :root { --slide-size: 320px; }
+      .feat-aside { display: none; }
+      .feat-stage { left: 16px; right: 16px; }
+      .collection { padding: 0 20px 88px; }
+      .collection-top { padding-left: 0; }
+      .col-sidebar { display: none; }
+      .releases-grid { grid-template-columns: repeat(2, 1fr); }
+      .section-divider { margin: 36px 20px; }
+    }
+    @media (max-width: 540px) {
+      :root { --slide-size: 280px; }
+      .nav { padding: 0 16px; }
+      footer { flex-direction: column; gap: 20px; text-align: center; }
+      .foot-col { align-items: center; }
+      .releases-grid { gap: 20px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ NAV ══ -->
+  <nav class="nav" role="navigation" aria-label="Main">
+    <div class="nav-left">
+      <a href="latest.html" class="nav-link">Latest</a>
+      <a href="index.html"  class="nav-link active" aria-current="page">Music</a>
+      <a href="shows.html"  class="nav-link">Shows</a>
+      <a href="bio.html"    class="nav-link">About</a>
+    </div>
+    <div class="nav-center">
+      <a href="index.html" aria-label="AZËE — Home">
+        <img src="Brand_assets/Azee%20white%20on%20black_texture.png" alt="AZËE" />
+      </a>
+    </div>
+    <div class="nav-right">
+      <a href="https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL" target="_blank" rel="noopener" class="nav-social" aria-label="Spotify">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 17.244a.75.75 0 0 1-1.032.249c-2.826-1.727-6.385-2.117-10.573-1.16a.75.75 0 1 1-.333-1.463c4.583-1.045 8.515-.594 11.69 1.342a.75.75 0 0 1 .248 1.032zm1.484-3.303a.938.938 0 0 1-1.29.309c-3.233-1.987-8.162-2.562-11.984-1.401a.938.938 0 0 1-.576-1.789c4.37-1.406 9.8-.724 13.54 1.591a.938.938 0 0 1 .31 1.29zm.128-3.44c-3.876-2.302-10.275-2.514-13.977-1.39a1.124 1.124 0 1 1-.653-2.151c4.246-1.29 11.3-1.042 15.76 1.61a1.125 1.125 0 1 1-1.13 1.931z"/></svg>
+      </a>
+      <a href="https://www.instagram.com/azee_music_" target="_blank" rel="noopener" class="nav-social" aria-label="Instagram">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      </a>
+      <a href="https://youtube.com/channel/UCYXs6lK5YwmoOEPz__Dbbgw" target="_blank" rel="noopener" class="nav-social" aria-label="YouTube">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75,15.02 15.5,12 9.75,8.98"/></svg>
+      </a>
+      <a href="https://www.facebook.com/azeeofficialmusic" target="_blank" rel="noopener" class="nav-social" aria-label="Facebook">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+      </a>
+      <a href="https://x.com/Azee_Music" target="_blank" rel="noopener" class="nav-social" aria-label="X">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.737-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- ══ FEATURED CAROUSEL ══ -->
+  <section class="featured" id="featured-section" aria-label="Featured release">
+    <div class="feat-layout">
+
+      <!-- Left sidebar -->
+      <aside class="feat-aside" aria-label="Latest releases">
+        <span class="feat-aside-badge">New</span>
+        <button class="feat-aside-item active" data-go="0">For Life</button>
+        <button class="feat-aside-item" data-go="1">Walking Underwater</button>
+        <button class="feat-aside-item" data-go="2">Drown In It</button>
+        <button class="feat-aside-item" data-go="3">Walk The Line</button>
+        <button class="feat-aside-item" data-go="4">If It Was (In My Head)</button>
+        <button class="feat-aside-item" data-go="5">Hourglass</button>
+        <button class="feat-aside-item" data-go="6">Nothing's Stopping Me Now</button>
+        <button class="feat-aside-item" data-go="7">Finding Myself EP</button>
+      </aside>
+
+      <!-- Carousel stage -->
+      <div class="feat-stage">
+        <!-- Canvas: slides are absolutely positioned here -->
+        <div class="feat-canvas" id="feat-canvas">
+          <div class="feat-slide" data-idx="0">
+            <img src="Images/For%20Life.JPG" alt="For Life" class="slide-img" />
+          </div>
+          <div class="feat-slide" data-idx="1">
+            <img src="Images/Walking%20underwater%20.jpg" alt="Walking Underwater" class="slide-img" />
+          </div>
+          <div class="feat-slide" data-idx="2">
+            <img src="Images/Drown%20in%20it.jpg" alt="Drown In It" class="slide-img" />
+          </div>
+          <div class="feat-slide" data-idx="3">
+            <img src="Images/Walk%20the%20line.jpg" alt="Walk The Line" class="slide-img" />
+          </div>
+          <div class="feat-slide" data-idx="4">
+            <img src="Images/IF%20it%20was.jpg" alt="If It Was (In My Head)" class="slide-img" />
+          </div>
+          <div class="feat-slide" data-idx="5">
+            <img src="Images/Hourglass.jpg" alt="Hourglass" class="slide-img" />
+          </div>
+          <div class="feat-slide" data-idx="6">
+            <img src="Images/Nothing.jpg" alt="Nothing's Stopping Me Now" class="slide-img" />
+          </div>
+          <div class="feat-slide" data-idx="7">
+            <img src="Images/Finding.png" alt="Finding Myself EP" class="slide-img" />
+          </div>
+        </div>
+
+        <!-- Slide progress bar -->
+        <div class="feat-progress" id="feat-progress"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="section-divider" role="separator"></div>
+
+  <!-- ══ MUSIC COLLECTION ══ -->
+  <section class="collection" aria-label="Music collection">
+    <div class="collection-top">
+      <h2 class="collection-heading">Music collection</h2>
+    </div>
+    <div class="collection-inner">
+      <aside class="col-sidebar" aria-label="Filter by type">
+        <button class="col-sidebar-filter active" onclick="filterReleases('all', this)">All Music</button>
+        <button class="col-sidebar-filter" onclick="filterReleases('single', this)">Singles</button>
+        <button class="col-sidebar-filter" onclick="filterReleases('ep', this)">EPs</button>
+        <button class="col-sidebar-filter" onclick="filterReleases('album', this)">Albums</button>
+      </aside>
+
+      <div class="releases-grid" id="releases-grid">
+
+        <a href="https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL" target="_blank" class="release-card" data-type="single">
+          <div class="release-cover"><img src="Images/For%20Life.JPG" alt="For Life" loading="lazy" /><div class="release-cover-ov"></div></div>
+          <div class="release-title">For Life</div>
+          <div class="release-meta"><span class="release-year">2026</span><span class="release-type">Single</span></div>
+        </a>
+
+        <a href="https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL" target="_blank" class="release-card" data-type="single">
+          <div class="release-cover"><img src="Images/Walking%20underwater%20.jpg" alt="Walking Underwater" loading="lazy" /><div class="release-cover-ov"></div></div>
+          <div class="release-title">Walking Underwater</div>
+          <div class="release-meta"><span class="release-year">2026</span><span class="release-type">Single</span></div>
+        </a>
+
+        <a href="https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL" target="_blank" class="release-card" data-type="single">
+          <div class="release-cover"><img src="Images/Drown%20in%20it.jpg" alt="Drown In It" loading="lazy" /><div class="release-cover-ov"></div></div>
+          <div class="release-title">Drown In It</div>
+          <div class="release-meta"><span class="release-year">2026</span><span class="release-type">Single</span></div>
+        </a>
+
+        <a href="https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL" target="_blank" class="release-card" data-type="single">
+          <div class="release-cover"><img src="Images/Walk%20the%20line.jpg" alt="Walk The Line" loading="lazy" /><div class="release-cover-ov"></div></div>
+          <div class="release-title">Walk The Line</div>
+          <div class="release-meta"><span class="release-year">2026</span><span class="release-type">Single</span></div>
+        </a>
+
+        <a href="https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL" target="_blank" class="release-card" data-type="single">
+          <div class="release-cover"><img src="Images/IF%20it%20was.jpg" alt="If It Was (In My Head)" loading="lazy" /><div class="release-cover-ov"></div></div>
+          <div class="release-title">If It Was (In My Head)</div>
+          <div class="release-meta"><span class="release-year">2026</span><span class="release-type">Single</span></div>
+        </a>
+
+        <a href="https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL" target="_blank" class="release-card" data-type="single">
+          <div class="release-cover"><img src="Images/Hourglass.jpg" alt="Hourglass" loading="lazy" /><div class="release-cover-ov"></div></div>
+          <div class="release-title">Hourglass</div>
+          <div class="release-meta"><span class="release-year">2025</span><span class="release-type">Single</span></div>
+        </a>
+
+        <a href="https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL" target="_blank" class="release-card" data-type="album">
+          <div class="release-cover"><img src="Images/Nothing.jpg" alt="Nothing's Stopping Me Now" loading="lazy" /><div class="release-cover-ov"></div></div>
+          <div class="release-title">Nothing's Stopping Me Now</div>
+          <div class="release-meta"><span class="release-year">2025</span><span class="release-type">Album</span></div>
+        </a>
+
+        <a href="https://open.spotify.com/album/2erA9S2RyLnStH3zkP7LWx" target="_blank" class="release-card" data-type="ep">
+          <div class="release-cover"><img src="Images/Finding.png" alt="Finding Myself EP" loading="lazy" /><div class="release-cover-ov"></div></div>
+          <div class="release-title">Finding Myself</div>
+          <div class="release-meta"><span class="release-year">2023</span><span class="release-type">EP</span></div>
+        </a>
+
+      </div>
+    </div>
+
+    <div class="load-more-wrap">
+      <button class="load-more-btn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Load more
+      </button>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══ -->
+  <footer role="contentinfo">
+    <div class="foot-links">
+      <a href="index.html" class="foot-link">Music</a>
+      <a href="shows.html" class="foot-link">Shows</a>
+      <a href="bio.html" class="foot-link">About</a>
+      <a href="https://edm.com/music-releases/azee-daevo-me-and-you/" target="_blank" rel="noopener" class="foot-link">Press</a>
+    </div>
+    <p class="foot-copy">© 2026 AZËE. All rights reserved.</p>
+    <div class="foot-socials">
+      <a href="https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL" target="_blank" rel="noopener" class="foot-social" aria-label="Spotify"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 17.244a.75.75 0 0 1-1.032.249c-2.826-1.727-6.385-2.117-10.573-1.16a.75.75 0 1 1-.333-1.463c4.583-1.045 8.515-.594 11.69 1.342a.75.75 0 0 1 .248 1.032zm1.484-3.303a.938.938 0 0 1-1.29.309c-3.233-1.987-8.162-2.562-11.984-1.401a.938.938 0 0 1-.576-1.789c4.37-1.406 9.8-.724 13.54 1.591a.938.938 0 0 1 .31 1.29zm.128-3.44c-3.876-2.302-10.275-2.514-13.977-1.39a1.124 1.124 0 1 1-.653-2.151c4.246-1.29 11.3-1.042 15.76 1.61a1.125 1.125 0 1 1-1.13 1.931z"/></svg></a>
+      <a href="https://www.instagram.com/azee_music_" target="_blank" rel="noopener" class="foot-social" aria-label="Instagram"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+      <a href="https://youtube.com/channel/UCYXs6lK5YwmoOEPz__Dbbgw" target="_blank" rel="noopener" class="foot-social" aria-label="YouTube"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75,15.02 15.5,12 9.75,8.98"/></svg></a>
+      <a href="https://www.facebook.com/azeeofficialmusic" target="_blank" rel="noopener" class="foot-social" aria-label="Facebook"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
+      <a href="https://x.com/Azee_Music" target="_blank" rel="noopener" class="foot-social" aria-label="X"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.737-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+    </div>
+  </footer>
+
+  <script>
+    /* ── CAROUSEL DATA ── */
+    var releases = [
+      { title:'For Life',                  year:'2026', type:'Single', url:'https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL' },
+      { title:'Walking Underwater',        year:'2026', type:'Single', url:'https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL' },
+      { title:'Drown In It',               year:'2026', type:'Single', url:'https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL' },
+      { title:'Walk The Line',             year:'2026', type:'Single', url:'https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL' },
+      { title:'If It Was (In My Head)',    year:'2026', type:'Single', url:'https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL' },
+      { title:'Hourglass',                 year:'2025', type:'Single', url:'https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL' },
+      { title:"Nothing's Stopping Me Now", year:'2025', type:'Album',  url:'https://open.spotify.com/intl-fr/artist/2yECmCVXrG3VBfqawyeOaL' },
+      { title:'Finding Myself EP',         year:'2023', type:'EP',     url:'https://open.spotify.com/album/2erA9S2RyLnStH3zkP7LWx' },
+    ];
+
+    /* ── CAROUSEL SETUP ── */
+    var slides      = Array.from(document.querySelectorAll('.feat-slide'));
+    var sideItems   = Array.from(document.querySelectorAll('.feat-aside-item'));
+    var progressEl  = document.getElementById('feat-progress');
+    var canvas      = document.getElementById('feat-canvas');
+    var activeIdx   = 0;
+    var isAnimating = false;
+
+    function getSlideSize() {
+      /* Read the actual rendered size of the first slide element */
+      return slides[0].offsetWidth || 480;
+    }
+
+    /* Build progress segments */
+    releases.forEach(function(_, i) {
+      var seg = document.createElement('div');
+      seg.className = 'feat-progress-seg' + (i === 0 ? ' active' : '');
+      seg.addEventListener('click', function() { goTo(i); });
+      progressEl.appendChild(seg);
+    });
+
+    /* Position values — recalculated from live element size */
+    var SLIDE_SIZE = 480; /* initial fallback, updated on first positionSlides call */
+    var OFFSETS = [
+      { x: 0,    y: 0,   scale: 1,    opacity: 1,    z: 10, cursor: 'default' },
+      { x: 0,    y: 0,   scale: 0.77, opacity: 0.7,  z: 9,  cursor: 'pointer' },
+      { x: 0,    y: 0,   scale: 0.58, opacity: 0.38, z: 8,  cursor: 'pointer' },
+    ];
+
+    function recalcOffsets() {
+      SLIDE_SIZE = getSlideSize();
+      OFFSETS[1].x = SLIDE_SIZE + 24;
+      OFFSETS[1].y = Math.round(SLIDE_SIZE * 0.29);
+      OFFSETS[2].x = SLIDE_SIZE + 24 + Math.round(SLIDE_SIZE * 0.77) + 18;
+      OFFSETS[2].y = Math.round(SLIDE_SIZE * 0.55);
+    }
+
+    function getTransform(dist) {
+      if (dist === 0) return OFFSETS[0];
+      if (dist === 1) return OFFSETS[1];
+      if (dist === 2) return OFFSETS[2];
+      return null;
+    }
+
+    function positionSlides(instant) {
+      recalcOffsets();
+
+      slides.forEach(function(slide, i) {
+        var dist = i - activeIdx;
+
+        if (instant) {
+          slide.style.transition = 'none';
+        } else {
+          slide.style.transition = 'transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.55s cubic-bezier(0.25,0.46,0.45,0.94)';
+        }
+
+        if (dist < 0) {
+          /* Slides to the left — fly out */
+          slide.style.transform = 'translateX(-' + (SLIDE_SIZE + 60) + 'px) translateY(0) scale(0.85)';
+          slide.style.opacity   = '0';
+          slide.style.zIndex    = '1';
+          slide.style.pointerEvents = 'none';
+        } else {
+          var o = getTransform(dist);
+          if (o) {
+            slide.style.transform = 'translateX(' + o.x + 'px) translateY(' + o.y + 'px) scale(' + o.scale + ')';
+            slide.style.opacity   = String(o.opacity);
+            slide.style.zIndex    = String(o.z);
+            slide.style.pointerEvents = o.cursor === 'pointer' ? 'auto' : 'none';
+            slide.style.cursor    = o.cursor;
+          } else {
+            /* dist >= 3 — hide off right */
+            slide.style.transform = 'translateX(' + (SLIDE_SIZE * 2.8) + 'px) translateY(80px) scale(0.45)';
+            slide.style.opacity   = '0';
+            slide.style.zIndex    = '1';
+            slide.style.pointerEvents = 'none';
+          }
+        }
+      });
+
+      /* Update active slide's pointer events */
+      slides[activeIdx].style.pointerEvents = 'none'; /* handled by CTA button */
+    }
+
+    function updateInfo() {
+      /* Update sidebar */
+      sideItems.forEach(function(el, i) { el.classList.toggle('active', i === activeIdx); });
+
+      /* Update progress bar */
+      Array.from(progressEl.children).forEach(function(seg, i) { seg.classList.toggle('active', i === activeIdx); });
+    }
+
+    function goTo(idx) {
+      if (idx < 0 || idx >= releases.length || idx === activeIdx || isAnimating) return;
+      isAnimating = true;
+      /* Reset any hover tilt on old active */
+      var oldImg = slides[activeIdx].querySelector('.slide-img');
+      oldImg.style.transform = '';
+      activeIdx = idx;
+      positionSlides(false);
+      updateInfo();
+      setTimeout(function() { isAnimating = false; }, 750);
+    }
+
+    /* Init */
+    positionSlides(true);
+    /* Small delay so instant positioning takes effect before enabling transitions */
+    setTimeout(function() { positionSlides(false); }, 30);
+    updateInfo();
+
+    /* Sidebar buttons */
+    sideItems.forEach(function(btn, i) {
+      btn.addEventListener('click', function() { goTo(i); });
+    });
+
+    /* Click on slide +1 / +2 to advance */
+    slides.forEach(function(slide, i) {
+      slide.addEventListener('click', function() {
+        if (i > activeIdx) goTo(i);
+      });
+    });
+
+    /* Scroll wheel navigation — horizontal only; vertical scrolls page */
+    var wheelTimer = null;
+    document.getElementById('featured-section').addEventListener('wheel', function(e) {
+      var ax = Math.abs(e.deltaX);
+      var ay = Math.abs(e.deltaY);
+      if (ax < 8 && ax <= ay) return; /* vertical scroll → let page scroll */
+      e.preventDefault();
+      if (wheelTimer) return;
+      var dir = e.deltaX > 0 ? 1 : -1;
+      goTo(activeIdx + dir);
+      wheelTimer = setTimeout(function() { wheelTimer = null; }, 800);
+    }, { passive: false });
+
+    /* Keyboard navigation */
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(activeIdx + 1);
+      if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(activeIdx - 1);
+    });
+
+    /* ── HOVER 3D TILT on active cover ── */
+    canvas.addEventListener('mousemove', function(e) {
+      var activeSlide = slides[activeIdx];
+      var rect = activeSlide.getBoundingClientRect();
+      if (e.clientX < rect.left || e.clientX > rect.right ||
+          e.clientY < rect.top  || e.clientY > rect.bottom) return;
+      var x = (e.clientX - rect.left)  / rect.width  - 0.5; /* -0.5 to 0.5 */
+      var y = (e.clientY - rect.top)   / rect.height - 0.5;
+      var img = activeSlide.querySelector('.slide-img');
+      img.style.transition = 'transform 0.1s linear';
+      img.style.transform  = 'perspective(700px) rotateX(' + (-y * 7) + 'deg) rotateY(' + (x * 7) + 'deg) scale(1.03)';
+    });
+
+    canvas.addEventListener('mouseleave', function() {
+      var img = slides[activeIdx].querySelector('.slide-img');
+      img.style.transition = 'transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94)';
+      img.style.transform  = '';
+    });
+
+    /* On slide change, clear tilt from old slide */
+    /* (already done in goTo) */
+
+    window.addEventListener('resize', function() { positionSlides(true); });
+    /* Re-init after fonts/images load so offsetWidth is accurate */
+    window.addEventListener('load', function() { positionSlides(true); });
+
+    /* ── COLLECTION FILTER ── */
+    function filterReleases(type, btn) {
+      document.querySelectorAll('.col-sidebar-filter').forEach(function(t) { t.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.release-card[data-type]').forEach(function(card) {
+        card.classList.toggle('filtered-out', type !== 'all' && card.dataset.type !== type);
+      });
+    }
+  </script>
+</body>
+</html>
